@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright 2016-2018 Therp BV <https://therp.nl>.
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
-from datetime import date
+from datetime import datetime, date, timedelta
 from dateutil.relativedelta import relativedelta
-from psycopg2 import IntegrityError
 
 from odoo import fields
 from odoo.exceptions import ValidationError
@@ -115,6 +114,102 @@ class TestPartnerRelation(PartnerRelationCase):
         self.assertTrue(reflexive_relation)
         with self.assertRaises(ValidationError):
             type_allow.allow_self = False
+
+    def test_self_disallowed_with_delete_invalid_relations(self):
+        """Test handle_invalid_onchange delete with allow_self disabled.
+
+        When deactivating allow_self, if handle_invalid_onchange is set
+        to delete, then existing reflexive relations are deleted.
+
+        Non reflexive relations are not modified.
+        """
+        type_allow = self.type_model.create({
+            'name': 'allow',
+            'name_inverse': 'allow_inverse',
+            'contact_type_left': 'p',
+            'contact_type_right': 'p',
+            'allow_self': True,
+            'handle_invalid_onchange': 'delete',
+        })
+        reflexive_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_01_person.id,
+        })
+        normal_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_04_volunteer.id,
+        })
+
+        type_allow.allow_self = False
+        self.assertFalse(reflexive_relation.exists())
+        self.assertTrue(normal_relation.exists())
+
+    def test_self_disallowed_with_end_invalid_relations(self):
+        """Test handle_invalid_onchange delete with allow_self disabled.
+
+        When deactivating allow_self, if handle_invalid_onchange is set
+        to end, then active reflexive relations are ended.
+
+        Non reflexive relations are not modified.
+
+        Reflexive relations with an end date prior to the current date
+        are not modified.
+        """
+        type_allow = self.type_model.create({
+            'name': 'allow',
+            'name_inverse': 'allow_inverse',
+            'contact_type_left': 'p',
+            'contact_type_right': 'p',
+            'allow_self': True,
+            'handle_invalid_onchange': 'end',
+        })
+        reflexive_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_01_person.id,
+            'date_start': '2000-01-02',
+        })
+        past_reflexive_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_01_person.id,
+            'date_end': '2000-01-01',
+        })
+        normal_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_04_volunteer.id,
+        })
+
+        type_allow.allow_self = False
+        self.assertEqual(reflexive_relation.date_end, fields.Date.today())
+        self.assertEqual(past_reflexive_relation.date_end, '2000-01-01')
+        self.assertFalse(normal_relation.date_end)
+
+    def test_self_disallowed_with_future_reflexive_relation(self):
+        """Test future reflexive relations are deleted.
+
+        If handle_invalid_onchange is set to end, then deactivating
+        reflexivity will delete invalid relations in the future.
+        """
+        type_allow = self.type_model.create({
+            'name': 'allow',
+            'name_inverse': 'allow_inverse',
+            'contact_type_left': 'p',
+            'contact_type_right': 'p',
+            'allow_self': True,
+            'handle_invalid_onchange': 'end',
+        })
+        future_reflexive_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_01_person.id,
+            'date_start': datetime.now() + timedelta(1),
+        })
+        type_allow.allow_self = False
+        self.assertFalse(future_reflexive_relation.exists())
 
     def test_self_default(self):
         """Test default not to allow relation with same partner.
@@ -264,19 +359,6 @@ class TestPartnerRelation(PartnerRelationCase):
             'contact_type_left': 'c',
             'contact_type_right': 'p'})
         self.assertFalse(relation_bart2lisa.exists())
-
-    def test_relation_type_unlink_dberror(self):
-        """Test deleting relation type when not possible.
-
-        This test will catch a DB Integrity error. Because of that the
-        cursor will be invalidated, and further tests using the objects
-        will not be possible.
-        """
-        # Create a relation type having restrict particular conditions.
-        self.type_school2student.handle_invalid_onchange = 'restrict'
-        # Unlink should lead to error because of restrict:
-        with self.assertRaises(IntegrityError):
-            self.type_school2student.unlink()
 
     def test_relation_type_unlink(self):
         """Test delete of relation type, including deleting relations."""

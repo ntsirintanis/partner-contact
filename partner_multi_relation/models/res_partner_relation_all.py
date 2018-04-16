@@ -28,6 +28,7 @@ SELECT
     rel.date_start,
     rel.date_end,
     %(is_inverse)s as is_inverse
+    %(extra_additional_columns)s
 FROM res_partner_relation rel"""
 
 # Register inverse relations
@@ -42,6 +43,7 @@ SELECT
     rel.date_start,
     rel.date_end,
     %(is_inverse)s as is_inverse
+    %(extra_additional_columns)s
 FROM res_partner_relation rel"""
 
 
@@ -141,7 +143,10 @@ class ResPartnerRelationAll(models.AbstractModel):
             key_offset=_last_key_offset,
             select_sql=select_sql % {
                 'key_offset': _last_key_offset,
-                'is_inverse': is_inverse})
+                'is_inverse': is_inverse,
+                'extra_additional_columns':
+                self._get_additional_relation_columns(),
+            })
 
     def get_register(self):
         register = collections.OrderedDict()
@@ -162,7 +167,7 @@ class ResPartnerRelationAll(models.AbstractModel):
         register = self.get_register()
         union_select = ' UNION '.join(
             [register[key]['select_sql']
-             for key in register.iterkeys() if key != '_lastkey'])
+             for key in register if key != '_lastkey'])
         return """\
 CREATE OR REPLACE VIEW %%(table)s AS
      WITH base_selection AS (%(union_select)s)
@@ -184,6 +189,16 @@ CREATE OR REPLACE VIEW %%(table)s AS
         """Utility function to define padding in one place."""
         # pylint: disable=no-self-use
         return 100
+
+    def _get_additional_relation_columns(self):
+        """Get additionnal columns from res_partner_relation.
+
+        This allows to add fields to the model res.partner.relation
+        and display these fields in the res.partner.relation.all list view.
+
+        :return: ', rel.column_a, rel.column_b_id'
+        """
+        return ''
 
     def _get_additional_view_fields(self):
         """Allow inherit models to add fields to view.
