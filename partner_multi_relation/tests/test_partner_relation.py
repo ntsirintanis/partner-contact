@@ -150,15 +150,27 @@ class TestPartnerRelation(TestPartnerRelationCommon):
                 'left_partner_id': self.partner_03_ngo.id,
                 'right_partner_id': self.partner_01_person.id})
 
+    def test_display_name(self):
+        """Test display name"""
+        relation = self.relation_model.create({
+            'left_partner_id': self.partner_02_company.id,
+            'type_id': self.type_company2person.id,
+            'right_partner_id': self.partner_01_person.id})
+        self.assertEqual(
+            relation.display_name, '%s %s %s' % (
+                relation.left_partner_id.name,
+                relation.type_id.name,
+                relation.right_partner_id.name))
+
     def test_relation_type_change(self):
         """Test change in relation type conditions."""
         # First create a relation type having no particular conditions.
         (type_school2student,
          school2student,
-         school2student_inverse) = \
-            self._create_relation_type_selection({
-                'name': 'school has student',
-                'name_inverse': 'studies at school'})
+         dummy_inverse) = (
+             self._create_relation_type_selection({
+                 'name': 'school has student',
+                 'name_inverse': 'studies at school'}))
         # Second create relations based on those conditions.
         partner_school = self.partner_model.create({
             'name': 'Test School',

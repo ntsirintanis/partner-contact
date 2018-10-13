@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016-2017 Therp BV
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+# Copyright 2016-2018 Therp BV <https://therp.nl>.
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 from openerp.exceptions import ValidationError
 
 from .test_partner_relation_common import TestPartnerRelationCommon
@@ -17,13 +17,13 @@ class TestPartnerRelation(TestPartnerRelationCommon):
         (self.type_nobody,
          self.selection_nobody,
          self.selection_nobody_inverse) = (
-            self._create_relation_type_selection({
-                'name': 'has relation with nobody',
-                'name_inverse': 'nobody has relation with',
-                'contact_type_left': 'c',
-                'contact_type_right': 'p',
-                'partner_category_left': category_nobody.id,
-                'partner_category_right': category_nobody.id}))
+             self._create_relation_type_selection({
+                 'name': 'has relation with nobody',
+                 'name_inverse': 'nobody has relation with',
+                 'contact_type_left': 'c',
+                 'contact_type_right': 'p',
+                 'partner_category_left': category_nobody.id,
+                 'partner_category_right': category_nobody.id}))
 
     def _get_empty_relation(self):
         """Get empty relation record for onchange tests."""
@@ -241,6 +241,53 @@ class TestPartnerRelation(TestPartnerRelationCommon):
         self.assertTrue('message' in warning)
         self.assertTrue('incompatible' in warning['message'])
 
+    def test_onchange(self):
+        """Test the function that should set domains on open of form."""
+        # Create a relation with type selection, that says this
+        # partner must be an organisation, other partner a person,
+        # organisation must be a NGO and person a volunteer.
+        relation = self.relation_all_model.create({
+            'this_partner_id': self.partner_03_ngo.id,
+            'type_selection_id': self.selection_ngo2volunteer.id,
+            'other_partner_id': self.partner_04_volunteer.id})
+        result = relation.onchange()
+        # Result should contain domains for fields.
+        self.assertIn('domain', result)
+        self.assertIn('this_partner_id', result['domain'])
+        self.assertIn('type_selection_id', result['domain'])
+        self.assertIn('other_partner_id', result['domain'])
+        # Selection of this_partner_id must be for organisations that
+        # are NGO's.
+        this_partner_domain = result['domain']['this_partner_id']
+        self.assertIn(('is_company', '=', True), this_partner_domain)
+        self.assertIn(
+            ('category_id', 'in', [self.category_01_ngo.id]),
+            this_partner_domain)
+        # Selection of type_selection_id should be limited to types that:
+        # a. Have organisations for this partner, or allow all partner types;
+        # b. Have a category that is present on this partner, or do not
+        #    demand a specific category;
+        # c. and d. The same as a. and b. but for other partner (not tested).
+        type_selection_domain = result['domain']['type_selection_id']
+        self.assertIn(
+            ('contact_type_this', '=', False), type_selection_domain)
+        self.assertIn(
+            ('contact_type_this', '=', 'c'), type_selection_domain)
+        self.assertIn(
+            ('partner_category_this', '=', False), type_selection_domain)
+        self.assertIn(
+            ('partner_category_this', 'in',
+             self.partner_03_ngo.category_id.ids),
+            type_selection_domain)
+        # Selection of other_partner_id must be for persons that
+        # are volunteers.
+        other_partner_domain = result['domain']['other_partner_id']
+        self.assertIn(('is_company', '=', False), other_partner_domain)
+        self.assertIn(
+            ('category_id', 'in', [
+                self.category_02_volunteer.id]),
+            other_partner_domain)
+
     def test_write(self):
         """Test write. Special attention for changing type."""
         relation_company2person = self._create_company2person_relation()
@@ -256,9 +303,9 @@ class TestPartnerRelation(TestPartnerRelationCommon):
             relation_company2person.other_partner_id.name,
             partner_extra_person.name)
         # We will also change to a type going from person to company:
-        (type_worker2company,
+        (dummy_type,
          selection_worker2company,
-         selection_company2worker) = self._create_relation_type_selection({
+         dummy_selection) = self._create_relation_type_selection({
              'name': 'works for',
              'name_inverse': 'has worker',
              'contact_type_left': 'p',
@@ -276,3 +323,21 @@ class TestPartnerRelation(TestPartnerRelationCommon):
         self.assertEqual(
             relation_company2person.other_partner_id.id,
             company_partner.id)
+
+    def test_inverse_write(self):
+        """Test write of record through inverse selection."""
+        # Create record through inverse relation.
+        relation = self.relation_all_model.create({
+            'this_partner_id': self.partner_01_person.id,
+            'type_selection_id': self.selection_person2company.id,
+            'other_partner_id': self.partner_02_company.id})
+        # Now change to not inverse relation type.
+        relation.write({
+            'type_selection_id': self.selection_person2company_extra.id})
+        # Because we switched from inverse to non inverse relation,
+        # the this and other partner also switched, as the 'self'
+        # is now pointing to the relation from the other side.
+        self.assertEqual(relation.this_partner_id, self.partner_02_company)
+        self.assertEqual(
+            relation.type_selection_id, self.selection_company2person_extra)
+        self.assertEqual(relation.other_partner_id, self.partner_01_person)

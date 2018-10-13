@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016 Therp BV
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+# Copyright 2016-2018 Therp BV <https://therp.nl>.
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 from openerp.tests import common
 
 
@@ -40,30 +40,39 @@ class TestPartnerRelationCommon(common.TransactionCase):
         # Create a new relation type withouth categories:
         (self.type_company2person,
          self.selection_company2person,
-         self.selection_person2company) = \
-            self._create_relation_type_selection({
-                'name': 'mixed',
-                'name_inverse': 'mixed_inverse',
-                'contact_type_left': 'c',
-                'contact_type_right': 'p'})
+         self.selection_person2company) = (
+             self._create_relation_type_selection({
+                 'name': 'has employee',
+                 'name_inverse': 'is employee at',
+                 'contact_type_left': 'c',
+                 'contact_type_right': 'p'}))
+        # Create an extra relation type but from p to c to test changes:
+        (self.type_person2company_extra,
+         self.selection_person2company_extra,
+         self.selection_company2person_extra) = (
+             self._create_relation_type_selection({
+                 'name': 'is director of',
+                 'name_inverse': 'has as director',
+                 'contact_type_left': 'p',
+                 'contact_type_right': 'c'}))
         # Create a new relation type with categories:
         (self.type_ngo2volunteer,
          self.selection_ngo2volunteer,
-         self.selection_volunteer2ngo) = \
-            self._create_relation_type_selection({
-                'name': 'NGO has volunteer',
-                'name_inverse': 'volunteer works for NGO',
-                'contact_type_left': 'c',
-                'contact_type_right': 'p',
-                'partner_category_left': self.category_01_ngo.id,
-                'partner_category_right': self.category_02_volunteer.id})
+         self.selection_volunteer2ngo) = (
+             self._create_relation_type_selection({
+                 'name': 'NGO has volunteer',
+                 'name_inverse': 'volunteer works for NGO',
+                 'contact_type_left': 'c',
+                 'contact_type_right': 'p',
+                 'partner_category_left': self.category_01_ngo.id,
+                 'partner_category_right': self.category_02_volunteer.id}))
 
     def _create_relation_type_selection(self, vals):
         """Create relation type and return this with selection types."""
         assert 'name' in vals, (
             "Name missing in vals to create relation type. Vals: %s."
             % vals)
-        assert 'name' in vals, (
+        assert 'name_inverse' in vals, (
             "Name_inverse missing in vals to create relation type. Vals: %s."
             % vals)
         new_type = self.type_model.create(vals)

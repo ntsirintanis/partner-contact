@@ -3,13 +3,14 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 {
     "name": "Partner relations",
-    "version": "10.0.1.0.2",
+    "version": "10.0.2.0.0",
     "author": "Therp BV,Camptocamp,Odoo Community Association (OCA)",
     "complexity": "normal",
     "category": "Customer Relationship Management",
     "license": "AGPL-3",
     "depends": [
         'contacts',
+        'web_domain_field',
     ],
     "demo": [
         "data/demo.xml",
