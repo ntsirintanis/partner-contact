@@ -176,9 +176,10 @@ class ResPartnerRelationType(models.Model):
                 reflexive_relations = self.env['res.partner.relation'].browse(
                     reflexive_relation_ids)
                 raise ValidationError(
-                    _("Reflexivity could not be disabled for the relation type "
-                      "{relation_type}. There are existing reflexive relations "
-                      "defined for the following partners: {partners}").format(
+                    _("Reflexivity could not be disabled for the relation "
+                      "type {relation_type}. There are existing reflexive "
+                      "relations defined for the following partners: "
+                      "{partners}").format(
                         relation_type=relation_type.display_name,
                         partners=reflexive_relations.mapped(
                             'left_partner_id.display_name')))
