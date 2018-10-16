@@ -158,6 +158,31 @@ class ResPartnerRelationType(models.Model):
                                 relation.date_end > cutoff_date):
                             relation.write({'date_end': cutoff_date})
 
+    def _check_no_existing_reflexive_relations(self):
+        """Check that no reflexive relation exists for this relation type."""
+        for relation_type in self:
+            self.env.cr.execute(
+                """
+                SELECT id FROM res_partner_relation
+                WHERE left_partner_id = right_partner_id
+                AND type_id = %(relation_type_id)s
+                """, {
+                    'relation_type_id': relation_type.id,
+                }
+            )
+            reflexive_relation_ids = [r[0] for r in self.env.cr.fetchall()]
+
+            if reflexive_relation_ids:
+                reflexive_relations = self.env['res.partner.relation'].browse(
+                    reflexive_relation_ids)
+                raise ValidationError(
+                    _("Reflexivity could not be disabled for the relation type "
+                      "{relation_type}. There are existing reflexive relations "
+                      "defined for the following partners: {partners}").format(
+                        relation_type=relation_type.display_name,
+                        partners=reflexive_relations.mapped(
+                            'left_partner_id.display_name')))
+
     @api.multi
     def _update_right_vals(self, vals):
         """Make sure that on symmetric relations, right vals follow left vals.
@@ -186,6 +211,11 @@ class ResPartnerRelationType(models.Model):
     def write(self, vals):
         """Handle existing relations if conditions change."""
         self.check_existing(vals)
+
+        allow_self_disabled = 'allow_self' in vals and not vals['allow_self']
+        if allow_self_disabled:
+            self._check_no_existing_reflexive_relations()
+
         for rec in self:
             rec_vals = vals.copy()
             if rec_vals.get('is_symmetric', rec.is_symmetric):

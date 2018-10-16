@@ -58,6 +58,27 @@ class TestPartnerRelation(TestPartnerRelationCommon):
                 'left_partner_id': self.partner_01_person.id,
                 'right_partner_id': self.partner_01_person.id})
 
+    def test_self_disallowed_after_self_relation_created(self):
+        """Test that allow_self can not be true if a reflexive relation already exists.
+
+        If at least one reflexive relation exists for the given type,
+        reflexivity can not be disallowed.
+        """
+        type_allow = self.type_model.create({
+            'name': 'allow',
+            'name_inverse': 'allow_inverse',
+            'contact_type_left': 'p',
+            'contact_type_right': 'p',
+            'allow_self': True})
+        self.assertTrue(type_allow)
+        reflexive_relation = self.relation_model.create({
+            'type_id': type_allow.id,
+            'left_partner_id': self.partner_01_person.id,
+            'right_partner_id': self.partner_01_person.id})
+        self.assertTrue(reflexive_relation)
+        with self.assertRaises(ValidationError):
+            type_allow.allow_self = False
+
     def test_self_default(self):
         """Test default not to allow relation with same partner.
 
