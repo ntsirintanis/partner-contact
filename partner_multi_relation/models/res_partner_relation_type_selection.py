@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2013-2017 Therp BV <http://therp.nl>
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+# Copyright 2013-2018 Therp BV <https://therp.nl>.
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 """
 For the model defined here _auto is set to False to prevent creating a
 database file. The model is based on a SQL view based on
@@ -15,8 +15,8 @@ the field labels translatable.
 """
 from psycopg2.extensions import AsIs
 
-from openerp import api, fields, models
-from openerp.tools import drop_view_if_exists
+from odoo import api, fields, models
+from odoo.tools import drop_view_if_exists
 
 
 class ResPartnerRelationTypeSelection(models.Model):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2014-2018 Therp BV <http://therp.nl>
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+# Copyright 2014-2018 Therp BV <https://therp.nl>.
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 # pylint: disable=method-required-super
 import collections
 import json
@@ -8,9 +8,9 @@ import logging
 
 from psycopg2.extensions import AsIs
 
-from openerp import _, api, fields, models
-from openerp.exceptions import ValidationError
-from openerp.tools import drop_view_if_exists
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+from odoo.tools import drop_view_if_exists
 
 
 _logger = logging.getLogger(__name__)
@@ -113,15 +113,17 @@ class ResPartnerRelationAll(models.AbstractModel):
     @api.multi
     @api.depends('this_partner_id', 'type_selection_id', 'other_partner_id')
     def _compute_domains(self):
+
+        def json_dump(this, result, fieldname):
+            this['%s_domain' % fieldname] = \
+                json.dumps(result['domain'][fieldname])
+
         for this in self:
-            type_selection_result = this.onchange_type_selection_id()
-            this.this_partner_id_domain = json.dumps(
-                type_selection_result['domain']['this_partner_id'])
-            this.other_partner_id_domain = json.dumps(
-                type_selection_result['domain']['other_partner_id'])
-            partner_result = this.onchange_partner_id()
-            this.type_selection_id_domain = json.dumps(
-                partner_result['domain']['type_selection_id'])
+            result = this.onchange_type_selection_id()
+            json_dump(this, result, 'this_partner_id')
+            json_dump(this, result, 'other_partner_id')
+            result = this.onchange_partner_id()
+            json_dump(this, result, 'type_selection_id')
 
     def register_specification(
             self, register, base_name, is_inverse, select_sql):
@@ -230,13 +232,6 @@ CREATE OR REPLACE VIEW %%(table)s AS
                 this.type_selection_id.display_name,
                 this.other_partner_id.name,
             ) for this in self}
-
-    @api.onchange()
-    def onchange(self):
-        """Fill domain on initial load of form for existing record."""
-        result = self.onchange_type_selection_id()
-        result['domain'].update(self.onchange_partner_id()['domain'])
-        return result
 
     @api.onchange('type_selection_id')
     def onchange_type_selection_id(self):

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright 2013-2018 Therp BV <https://therp.nl>.
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
 """Define the type of relations that can exist between partners."""
-from openerp import _, api, fields, models
-from openerp.exceptions import ValidationError
-from openerp.osv.expression import AND, OR
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+from odoo.osv.expression import AND, OR
 
 
 HANDLE_INVALID_ONCHANGE = [
