@@ -182,6 +182,7 @@ CREATE OR REPLACE VIEW %%(table)s AS
 
     def _get_padding(self):
         """Utility function to define padding in one place."""
+        # pylint: disable=no-self-use
         return 100
 
     def _get_additional_view_fields(self):
@@ -191,6 +192,7 @@ CREATE OR REPLACE VIEW %%(table)s AS
         prepended by a comma, like so:
             return ', typ.allow_self, typ.left_partner_category'
         """
+        # pylint: disable=no-self-use
         return ''
 
     def _get_additional_tables(self):
@@ -199,6 +201,7 @@ CREATE OR REPLACE VIEW %%(table)s AS
         Example:
             return 'JOIN type_extention ext ON (bas.type_id = ext.id)'
         """
+        # pylint: disable=no-self-use
         return ''
 
     @api.model_cr_context
@@ -210,9 +213,9 @@ CREATE OR REPLACE VIEW %%(table)s AS
             {'table': AsIs(self._table),
              'padding': self._get_padding(),
              'additional_view_fields':
-                AsIs(self._get_additional_view_fields()),
+             AsIs(self._get_additional_view_fields()),
              'additional_tables':
-                AsIs(self._get_additional_tables())})
+             AsIs(self._get_additional_tables())})
         return super(ResPartnerRelationAll, self)._auto_init()
 
     @api.model
@@ -386,6 +389,9 @@ CREATE OR REPLACE VIEW %%(table)s AS
                 'this_partner_id',
                 'type_selection_id',
                 'other_partner_id',
+                'this_partner_id_domain',
+                'type_selection_id_domain',
+                'other_partner_id_domain',
                 'is_inverse'):
             if key in vals:
                 del vals[key]
