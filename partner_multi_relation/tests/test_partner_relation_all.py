@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright 2016-2018 Therp BV <https://therp.nl>.
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+# pylint: disable=invalid-name,missing-docstring
 import json
 
 from odoo.exceptions import ValidationError
@@ -40,7 +41,7 @@ class TestPartnerRelation(PartnerRelationCase):
         self.selection_nobody = self._get_selection_type(
             self.relation_type_nobody, is_inverse=False)
         # Create a ceo relation
-        self.relation_ceo = self.relation_all_model.create({
+        self.relation_has_ceo = self.relation_all_model.create({
             'this_partner_id': self.partner_company_test.id,
             'type_selection_id': self.selection_company_has_ceo.id,
             'other_partner_id': self.partner_person_test.id})
@@ -78,7 +79,7 @@ class TestPartnerRelation(PartnerRelationCase):
 
     def test_display_name(self):
         """Test display name"""
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         self.assertEqual(
             relation.display_name, '%s %s %s' % (
                 relation.this_partner_id.name,
@@ -87,12 +88,12 @@ class TestPartnerRelation(PartnerRelationCase):
 
     def test__regular_write(self):
         """Test write with valid data."""
-        self.relation_ceo.write({'date_start': '2014-09-01'})
-        self.assertEqual(self.relation_ceo.date_start, '2014-09-01')
+        self.relation_has_ceo.write({'date_start': '2014-09-01'})
+        self.assertEqual(self.relation_has_ceo.date_start, '2014-09-01')
 
     def test_write_incompatible_dates(self):
         """Test write with date_end before date_start."""
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         with self.assertRaises(ValidationError):
             relation.write({
                 'date_start': '2016-09-01',
@@ -100,7 +101,7 @@ class TestPartnerRelation(PartnerRelationCase):
 
     def test_validate_overlapping_01(self):
         """Test create overlapping with no start / end dates."""
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         with self.assertRaises(ValidationError):
             # New relation with no start / end should give error
             self.relation_all_model.create({
@@ -143,15 +144,14 @@ class TestPartnerRelation(PartnerRelationCase):
 
     def test_inverse_record(self):
         """Test creation of inverse record."""
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         inverse_relation = self.relation_all_model.search([
             ('this_partner_id', '=', relation.other_partner_id.id),
-            ('other_partner_id', '=', relation.this_partner_id.id)])
-        self.assertTrue(bool(inverse_relation))
-        for relations in inverse_relation:
-            self.assertEqual(
-                relation.type_selection_id.name,
-                self.selection_company_has_ceo.name)
+            ('other_partner_id', '=', relation.this_partner_id.id),
+            ('type_selection_id', '=', self.selection_person_is_ceo.id)])
+        # There should be only one relation of a certain type between the
+        # same partners (if no end or start date).
+        self.assertEqual(len(inverse_relation), 1)
 
     def test_inverse_creation(self):
         """Test creation of record through inverse selection."""
@@ -183,7 +183,7 @@ class TestPartnerRelation(PartnerRelationCase):
     def test_unlink(self):
         """Unlinking derived relation should unlink base relation."""
         # Check wether underlying record is removed when record is removed:
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         base_model = self.env[relation.res_model]
         base_relation = base_model.browse([relation.res_id])
         relation.unlink()
@@ -201,7 +201,7 @@ class TestPartnerRelation(PartnerRelationCase):
         self.assertTrue('other_partner_id' in result['domain'])
         self.assertFalse(result['domain']['other_partner_id'])
         # 2. Test call with company 2 person relation
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         domain = relation.onchange_type_selection_id()['domain']
         self.assertTrue(
             ('is_company', '=', False) in domain['other_partner_id'])
@@ -246,7 +246,7 @@ class TestPartnerRelation(PartnerRelationCase):
         self.assertTrue('type_selection_id' in result['domain'])
         self.assertFalse(result['domain']['type_selection_id'])
         # 2. Test call with company 2 person relation
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         domain = relation.onchange_partner_id()['domain']
         self.assertTrue(
             ('contact_type_this', '=', 'c') in domain['type_selection_id'])
@@ -305,7 +305,7 @@ class TestPartnerRelation(PartnerRelationCase):
 
     def test_write(self):
         """Test write. Special attention for changing type."""
-        relation = self.relation_ceo
+        relation = self.relation_has_ceo
         company_partner = relation.this_partner_id
         # First get another worker:
         partner_extra_person = self.partner_model.create({

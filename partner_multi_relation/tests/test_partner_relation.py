@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright 2016-2018 Therp BV <https://therp.nl>.
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+# pylint: disable=invalid-name,missing-docstring
 from datetime import datetime, date, timedelta
 from dateutil.relativedelta import relativedelta
 
@@ -18,7 +19,6 @@ class TestPartnerRelation(PartnerRelationCase):
 
     post_install = True
 
-    # pylint: disable=invalid-name
     def setUp(self):
         super(TestPartnerRelation, self).setUp()
         # Create a relation type having no particular conditions.
@@ -133,13 +133,13 @@ class TestPartnerRelation(PartnerRelationCase):
         })
         reflexive_relation = self.relation_model.create({
             'type_id': type_allow.id,
-            'left_partner_id': self.partner_01_person.id,
-            'right_partner_id': self.partner_01_person.id,
+            'left_partner_id': self.partner_person_test.id,
+            'right_partner_id': self.partner_person_test.id,
         })
         normal_relation = self.relation_model.create({
             'type_id': type_allow.id,
-            'left_partner_id': self.partner_01_person.id,
-            'right_partner_id': self.partner_04_volunteer.id,
+            'left_partner_id': self.partner_person_test.id,
+            'right_partner_id': self.partner_volunteer_test.id,
         })
 
         type_allow.allow_self = False
@@ -167,20 +167,20 @@ class TestPartnerRelation(PartnerRelationCase):
         })
         reflexive_relation = self.relation_model.create({
             'type_id': type_allow.id,
-            'left_partner_id': self.partner_01_person.id,
-            'right_partner_id': self.partner_01_person.id,
+            'left_partner_id': self.partner_person_test.id,
+            'right_partner_id': self.partner_person_test.id,
             'date_start': '2000-01-02',
         })
         past_reflexive_relation = self.relation_model.create({
             'type_id': type_allow.id,
-            'left_partner_id': self.partner_01_person.id,
-            'right_partner_id': self.partner_01_person.id,
+            'left_partner_id': self.partner_person_test.id,
+            'right_partner_id': self.partner_person_test.id,
             'date_end': '2000-01-01',
         })
         normal_relation = self.relation_model.create({
             'type_id': type_allow.id,
-            'left_partner_id': self.partner_01_person.id,
-            'right_partner_id': self.partner_04_volunteer.id,
+            'left_partner_id': self.partner_person_test.id,
+            'right_partner_id': self.partner_volunteer_test.id,
         })
 
         type_allow.allow_self = False
@@ -204,8 +204,8 @@ class TestPartnerRelation(PartnerRelationCase):
         })
         future_reflexive_relation = self.relation_model.create({
             'type_id': type_allow.id,
-            'left_partner_id': self.partner_01_person.id,
-            'right_partner_id': self.partner_01_person.id,
+            'left_partner_id': self.partner_person_test.id,
+            'right_partner_id': self.partner_person_test.id,
             'date_start': datetime.now() + timedelta(1),
         })
         type_allow.allow_self = False
