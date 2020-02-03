@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2015 ACSONE SA/NV (<http://acsone.eu>).
 # Copyright 2016 Tecnativa - Vicent Cubells
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
@@ -33,3 +32,16 @@ class TestBasePartnerSequence(common.TransactionCase):
         self.assertEqual(
             self.partner.ref, contact.ref, "All it's ok as sequence doesn't "
                                            "increase.")
+
+    def test_unique_ref_on_write(self):
+        """Assert that create and write gives a different refs if we """
+        vals = [
+            {'name': "test1", 'email': "test@test.com"},
+            {'name': "test2", 'email': "test@test.com"},
+        ]
+        partners = self.env['res.partner'].create(vals)
+        self.assertFalse(partners[0].ref == partners[1].ref)
+        partners.write({'ref': False})
+        self.assertFalse(partners[0].ref)
+        partners.write({})
+        self.assertFalse(partners[0].ref == partners[1].ref)
